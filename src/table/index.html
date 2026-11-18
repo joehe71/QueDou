@@ -27,15 +27,16 @@
         <div class="bottom"><span>底牌</span><div id="bottom" class="row mini"></div></div>
         <div class="counter right"><span>倍数</span><strong id="multiplier">×1</strong></div>
       </div>
+      <!-- Seat 0 is below: 0 → 1 (right) → 2 (left) is counterclockwise. -->
       <div class="arena">
-        <section id="seat-1" class="seat" aria-label="青雀"></section>
+        <section id="seat-2" class="seat" aria-label="栗雀"></section>
         <div class="center">
           <p id="status" role="status" aria-live="polite"></p>
           <div id="model-wait" role="timer" hidden></div>
           <div id="center-content"></div>
           <div id="self-play" class="row play-row"></div>
         </div>
-        <section id="seat-2" class="seat" aria-label="栗雀"></section>
+        <section id="seat-1" class="seat" aria-label="青雀"></section>
       </div>
       <div class="player">
         <div class="player-bar"><div id="self-header" class="seat-header"><span id="self" class="self"></span></div><span id="selection"></span><button id="autopilot" class="quiet" type="button">托管</button></div>

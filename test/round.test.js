@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { classify, beats, legalMoves, rankOf, RANKS } from '../src/table/cards.js';
 import { bid, deal, move, playerView } from '../src/table/round.js';
@@ -73,6 +74,17 @@ test('deals 54 unique cards, checks bid order, passes, and landlord assignment',
 function fixture(hands) {
   return { ...bid(deal(() => 0.4, 0), 0, 3), hands };
 }
+
+test('table seats follow the counterclockwise turn order from the player', () => {
+  const html = readFileSync(new URL('../src/table/index.html', import.meta.url), 'utf8');
+  assert.match(html, /<div class="arena">\s*<section id="seat-2"[\s\S]*?<section id="seat-1"[^>]*><\/section>\s*<\/div>\s*<div class="player">/);
+  const state = fixture([[0, 1], [4, 5], [8, 9]]);
+  const right = move(state, 0, [0]);
+  assert.equal(right.turn, 1);
+  const left = move(right, 1, [4]);
+  assert.equal(left.turn, 2);
+  assert.equal(move(left, 2, [8]).turn, 0);
+});
 
 test('two passes return the lead, and illegal actions leave state intact', () => {
   const state = fixture([[0, 4], [8], [12]]);

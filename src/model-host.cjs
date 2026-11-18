@@ -20,7 +20,7 @@ function turnView(spec) {
       seen.add(id);
     }
   }
-  const context = [`你是座位 ${seat} 的斗地主选手，出牌按 0 → 1 → 2 → 0 轮转。`,
+  const context = [`你是座位 ${seat} 的斗地主选手，出牌按 0 → 1 → 2 → 0 逆时针轮转。`,
     `你的手牌：${labels(hand)}。座位 0/1/2 剩余张数：${counts.join('/')}。`];
   let options;
   let history;
