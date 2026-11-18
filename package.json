@@ -1,0 +1,13 @@
+{
+  "name": "finch-quedou",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "A Dou Dizhu game with Finch model opponents.",
+  "main": "dist/index.cjs",
+  "files": ["dist/", "finch.json", "i18n/", "icon.png"],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test"
+  }
+}

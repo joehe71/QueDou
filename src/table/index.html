@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>雀斗 · QueDou</title>
+  <link rel="stylesheet" href="./table.css">
+  <script type="module" src="./table.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">♠</span>
+        <div><div class="eyebrow">QUEDOU CARD CLUB</div><h1>雀斗<span>斗地主</span></h1></div>
+      </div>
+      <div class="top-actions"><span class="mode"><i></i> 模型对局</span><button id="save-error" class="quiet" type="button" hidden>存档失败，重试</button><button id="opponents" class="quiet" type="button">对手</button><button id="help" class="quiet" type="button">玩法</button></div>
+    </header>
+    <section class="table" aria-label="斗地主牌桌">
+      <div id="round-controls" class="round-controls" role="group" aria-label="管理对局" hidden>
+        <button id="exit-round" class="secondary" type="button">退出对局</button>
+        <button id="restart-round" class="secondary" type="button">重新开始</button>
+      </div>
+      <div class="table-top">
+        <div class="counter"><span>局数</span><strong id="round-number">—</strong></div>
+        <div class="bottom"><span>底牌</span><div id="bottom" class="row mini"></div></div>
+        <div class="counter right"><span>倍数</span><strong id="multiplier">×1</strong></div>
+      </div>
+      <div class="arena">
+        <section id="seat-1" class="seat" aria-label="青雀"></section>
+        <div class="center">
+          <p id="status" role="status" aria-live="polite"></p>
+          <div id="model-wait" role="timer" hidden></div>
+          <div id="center-content"></div>
+          <div id="self-play" class="row play-row"></div>
+        </div>
+        <section id="seat-2" class="seat" aria-label="栗雀"></section>
+      </div>
+      <div class="player">
+        <div class="player-bar"><div id="self-header" class="seat-header"><span id="self" class="self"></span></div><span id="selection"></span><button id="autopilot" class="quiet" type="button">托管</button></div>
+        <div id="autopilot-status" role="status" aria-atomic="true"></div>
+        <div id="hand" class="hand row" aria-label="你的手牌"></div>
+        <div id="actions" class="actions" aria-label="对局操作"></div>
+      </div>
+    </section>
+  </main>
+  <dialog id="opponent-settings" aria-labelledby="opponents-title">
+    <h2 id="opponents-title">选择对手</h2>
+    <div class="model-fields">
+      <label>青雀 <select id="model-1"></select></label>
+      <label>栗雀 <select id="model-2"></select></label>
+    </div>
+    <p id="model-status" role="status"></p>
+    <p>雀斗只会向对手模型发送该座位自己的手牌和公开牌面。云端模型可能联网并消耗额度。</p>
+    <form method="dialog">
+      <button value="cancel" autofocus>取消</button>
+      <button id="apply-models" value="apply" class="primary" disabled>应用</button>
+    </form>
+  </dialog>
+  <dialog id="autopilot-settings" aria-labelledby="autopilot-title">
+    <h2 id="autopilot-title">托管你的座位</h2>
+    <div class="model-fields">
+      <label>托管模型 <select id="autopilot-model"></select></label>
+    </div>
+    <p id="autopilot-model-status" role="status"></p>
+    <p>托管会代你叫分、出牌和过牌，可随时取消。选用 Finch 模型会发送你的手牌和公开牌面；云端模型可能联网并消耗额度。</p>
+    <form method="dialog">
+      <button value="cancel" autofocus>取消</button>
+      <button id="enable-autopilot" value="enable" class="primary" disabled>开启托管</button>
+    </form>
+  </dialog>
+  <dialog id="round-confirm" aria-labelledby="round-confirm-title" aria-describedby="round-confirm-detail">
+    <h2 id="round-confirm-title"></h2>
+    <p id="round-confirm-detail"></p>
+    <form method="dialog" class="round-controls">
+      <button class="quiet" value="cancel" autofocus>取消</button>
+      <button id="round-confirm-action" class="primary" value="confirm"></button>
+    </form>
+  </dialog>
+  <dialog id="rules" aria-labelledby="rules-title">
+    <h2 id="rules-title">怎么玩</h2>
+    <ul>
+      <li>三人各发 17 张。轮流叫 1 至 3 分（只能加分）或不叫。最高分成为地主，拿底牌并先出；三家都不叫时，点击「重新发牌」继续。</li>
+      <li>点击手牌选中或取消。跟牌需同牌型、同张数且更大；炸弹能压普通牌，王炸最大。连续两家不出后，上次出牌的人重新领出。</li>
+      <li>顺子、连对和飞机的主体只能用 3 至 A。飞机和四带二的单张可来自同一对子；带对子时须用不同点数的对子。</li>
+      <li>地主独自对战两位农民，任一方先有人出完即获胜。炸弹、王炸、春天和反春天均使倍数翻倍。</li>
+    </ul>
+    <form method="dialog"><button class="primary">返回牌桌</button></form>
+  </dialog>
+</body>
+</html>

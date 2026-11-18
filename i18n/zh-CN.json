@@ -1,0 +1,5 @@
+{
+  "name": "雀斗",
+  "description": "三人斗地主，与 Finch 模型对战。",
+  "appView": { "description": "打开斗地主牌桌，与 Finch 模型对战" }
+}
