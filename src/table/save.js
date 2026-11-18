@@ -26,7 +26,21 @@ function validRound(state) {
       (state.target !== null && !play(state.target))) return false;
   const hands = state.hands.flat();
   if (new Set(hands).size !== hands.length) return false;
+  if (state.played !== undefined) {
+    if (!Array.isArray(state.played) || state.played.length > 54) return false;
+    const seen = new Set(hands);
+    const recorded = [0, 0, 0];
+    for (const action of state.played) {
+      if (!seat(action?.seat) || !cards(action.cards) || !classify(action.cards) ||
+          ++recorded[action.seat] > state.plays[action.seat]) return false;
+      for (const id of action.cards) {
+        if (seen.has(id)) return false;
+        seen.add(id);
+      }
+    }
+  }
   if (state.phase === 'bid' || state.phase === 'redeal') {
+    if (state.played?.length) return false;
     return state.landlord === null && !state.target && state.result === null &&
       state.hands.every((hand) => hand.length === 17) && state.bottom.every((id) => !hands.includes(id)) &&
       (state.phase === 'bid' ? seat(state.turn) && state.bids[state.turn] === null
@@ -56,6 +70,7 @@ export function decodeTable(snapshot) {
         (saved.state === null ? saved.roundNumber !== 0 : saved.roundNumber === 0 || !validRound(saved.state)) ||
         !triple(saved.opponents, model) || saved.opponents[0] !== null ||
         !triple(saved.fallback, (value) => value === null || typeof value === 'string')) return null;
+    if (saved.state && saved.state.played === undefined) saved.state.played = [];
     const canSelect = saved.state?.phase === 'play' && saved.state.turn === 0;
     const selected = canSelect && cards(saved.selected) && saved.selected.every((id) => saved.state.hands[0].includes(id))
       ? saved.selected : [];

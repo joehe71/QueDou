@@ -5,7 +5,9 @@ export function decisionFor(state, seat) {
   const view = playerView(state, seat);
   const choices = state.phase === 'bid' ? bidOptions(state) : orderedMoves(view).slice(0, 32).map(({ cards }) => cards);
   if (state.phase === 'play' && view.target) choices.push([]);
-  return { ...view, phase: state.phase, choices };
+  const played = state.played.map(({ seat, cards }) => ({ seat, cards: [...cards] }));
+  const playedIncomplete = played.length < state.plays.reduce((total, count) => total + count, 0);
+  return { ...view, phase: state.phase, choices, played, playedIncomplete };
 }
 
 export function createModelClient(bridge, listTimeoutMs = 9500) {

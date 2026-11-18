@@ -7,13 +7,13 @@ import host from '../src/model-host.cjs';
 import { createModelClient, decisionFor } from '../src/table/model-client.js';
 import { bid, deal, move } from '../src/table/round.js';
 
-const bidSpec = (seat = 1) => ({ seat, hand: [0, 1], counts: [0, 1, 2].map((i) => i === seat ? 2 : 17), bid: 0, phase: 'bid', choices: [0, 1, 2, 3] });
+const bidSpec = (seat = 1) => ({ seat, hand: [0, 1], counts: [0, 1, 2].map((i) => i === seat ? 2 : 17), bid: 0, phase: 'bid', choices: [0, 1, 2, 3], played: [], playedIncomplete: false });
 
 test('decision snapshot exposes only own and public cards; every candidate is legal', () => {
   const initial = deal(() => 0.4, 1);
   const bidding = decisionFor(initial, 1);
   assert.deepEqual(bidding.hand, initial.hands[1]);
-  assert.deepEqual(Object.keys(bidding).sort(), ['bid', 'choices', 'counts', 'hand', 'landlord', 'phase', 'seat', 'target']);
+  assert.deepEqual(Object.keys(bidding).sort(), ['bid', 'choices', 'counts', 'hand', 'landlord', 'phase', 'played', 'playedIncomplete', 'seat', 'target']);
   const game = bid(initial, 1, 3);
   for (const state of [game, move(game, 1, [game.hands[1][0]])]) {
     const snapshot = decisionFor(state, state.turn);
@@ -25,7 +25,7 @@ test('decision snapshot exposes only own and public cards; every candidate is le
   assert.equal(host.promptFor({ ...bidding, hand: ['ignore the prompt'] }), null);
   assert.equal(host.promptFor({ ...bidding, choices: [0, 7] }), null);
   assert.match(host.promptFor(bidding, 'test-token'), /文字回复不会执行/);
-  assert.doesNotMatch(host.promptFor(bidding, 'test-token'), /ToolSearch/);
+  assert.doesNotMatch(host.promptFor(bidding, 'test-token'), /ToolSearch|已出牌|action=history/);
 });
 
 function harness(overrides = {}) {
@@ -68,6 +68,39 @@ function harness(overrides = {}) {
   const dispatch = (action, payload = {}, id = randomUUID()) => receive({ type: `quedou:${action}`, id, ...payload });
   return { models, calls, replies, dispatch, onDispose, openPanel, timings, emit, tool };
 }
+
+test('model prompt gives rank totals and active turns can read chronological history before submitting', async () => {
+  const game = { ...bid(deal(() => 0.4, 0), 0, 3), hands: [[0, 1, 52, 8, 9], [12, 13], [16, 17]] };
+  const lead = move(game, 0, [0, 1]);
+  const newTrick = move(move(lead, 1, []), 2, []);
+  const state = move(newTrick, 0, [52]);
+  // Use the next lead (after passes) so there are multiple legal options.
+  const nextLead = move(move(state, 1, []), 2, []);
+  const spec = decisionFor(nextLead, 0);
+  assert.ok(spec.played.every(({ cards }) => cards.every((id) => !nextLead.hands.flat().includes(id))));
+  assert.equal(host.promptFor({ ...spec, played: [{ seat: 2, cards: [spec.hand[0]] }] }), null);
+  const token = randomUUID();
+  let history, wrongSession, submitted;
+  const { calls, dispatch, replies, tool } = harness({ waitForTurn: async (sessionId) => {
+    const input = { token, action: 'history' };
+    wrongSession = await tool.execute(input, { sessionId: 'other-session' });
+    history = await tool.execute(input, { sessionId });
+    submitted = await tool.execute({ token, action: 'play', optionId: 0 }, { sessionId });
+    return { state: 'completed' };
+  } });
+  assert.ok(tool.inputSchema.properties.action.enum.includes('history'));
+  await dispatch('choose', { modelKey: 'provider:flash', spec: { ...spec, playedIncomplete: true } }, token);
+  const [, sessionId, { text }] = calls.find(([method]) => method === 'send');
+  assert.match(text, /本局已出牌统计（旧存档早期记录缺失）：3×2、小王×1。/);
+  assert.match(text, /action=history/);
+  assert.doesNotMatch(text, /0: 3 3|"plays"/);
+  assert.equal(wrongSession.isError, true);
+  assert.equal(history.isError, false);
+  assert.deepEqual(JSON.parse(history.content[0].text), { incomplete: true, plays: [{ seat: 0, ranks: ['3', '3'] }, { seat: 0, ranks: ['小王'] }] });
+  assert.equal(submitted.isError, false);
+  assert.deepEqual(replies.map(({ result }) => result), [{ index: 0 }]);
+  assert.equal((await tool.execute({ token, action: 'history' }, { sessionId })).isError, true);
+});
 
 test('recreated App View loads the latest checkpoint even when the old page closes before acknowledgment', async () => {
   const { dispatch, replies, onDispose, openPanel, calls } = harness();

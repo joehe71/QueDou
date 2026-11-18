@@ -7,7 +7,7 @@ export function deal(random = Math.random, starter = Math.floor(random() * 3)) {
   return {
     phase: 'bid', starter, turn: starter, hands: [0, 1, 2].map((i) => descending(deck.slice(i * 17, i * 17 + 17))),
     bottom: deck.slice(51), bids: [null, null, null], bid: 0, bidder: null, landlord: null,
-    target: null, passes: 0, last: Array(3).fill(null), plays: [0, 0, 0], multiplier: 1, result: null,
+    target: null, passes: 0, last: Array(3).fill(null), plays: [0, 0, 0], played: [], multiplier: 1, result: null,
   };
 }
 
@@ -42,7 +42,8 @@ export function move(state, seat, cards) {
   const last = (state.target ? state.last : Array(3).fill(null)).with(seat, target);
   const plays = state.plays.with(seat, state.plays[seat] + 1);
   const multiplier = state.multiplier * (isBomb(play) ? 2 : 1);
-  const updated = { ...state, hands, target, last, plays, multiplier, passes: 0, turn: next(seat) };
+  const played = [...state.played, { seat, cards: target.cards }];
+  const updated = { ...state, hands, target, last, plays, played, multiplier, passes: 0, turn: next(seat) };
   if (remaining.length) return updated;
 
   const landlordWon = seat === state.landlord;

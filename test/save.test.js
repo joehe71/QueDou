@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { bid, deal, move, playerView } from '../src/table/round.js';
 import { computerMove } from '../src/table/computer.js';
 import { decodeTable, encodeTable, loadTable } from '../src/table/save.js';
+import { decisionFor } from '../src/table/model-client.js';
 
 const saveTable = (table, storage) => storage.setItem('finch-quedou:table', encodeTable(table));
 
@@ -68,6 +69,25 @@ test('legacy snapshots keep the model choice but discard reasoning settings', ()
   assert.deepEqual(restored.state, table.state);
   saveTable(restored, storage);
   assert.deepEqual(JSON.parse(data.get(key)).opponents, table.opponents);
+});
+
+test('old in-progress saves resume recording plays without inventing earlier history', () => {
+  const { table } = fixture();
+  const game = bid(table.state, 0, 3);
+  const state = move(game, 0, [game.hands[0][0]]);
+  const snapshot = JSON.parse(encodeTable({ ...table, state }));
+  delete snapshot.state.played;
+  const restored = decodeTable(JSON.stringify(snapshot));
+  assert.deepEqual(restored.state.played, []);
+  assert.equal(decisionFor(restored.state, 1).playedIncomplete, true);
+  const newTrick = move(move(restored.state, 1, []), 2, []);
+  const card = newTrick.hands[0][0];
+  const updated = move(newTrick, 0, [card]);
+  const next = decodeTable(encodeTable({ ...table, state: updated }));
+  assert.deepEqual(next.state.played, [{ seat: 0, cards: [card] }]);
+  assert.equal(decisionFor(next.state, 1).playedIncomplete, true);
+  snapshot.state.played = [{ seat: 0, cards: [snapshot.state.hands[1][0]] }];
+  assert.equal(decodeTable(JSON.stringify(snapshot)), null);
 });
 
 test('bad or unsupported snapshots are ignored and inaccessible storage is non-fatal', () => {
